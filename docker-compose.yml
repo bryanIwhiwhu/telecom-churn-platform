@@ -1,0 +1,32 @@
+# Local "production-like" stack: PostgreSQL warehouse + API.
+#   docker compose up --build
+#   open http://localhost:8000/docs
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: churn
+      POSTGRES_PASSWORD: churn_local_only
+      POSTGRES_DB: churn
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U churn"]
+      interval: 3s
+      retries: 10
+
+  api:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg2://churn:churn_local_only@db:5432/churn
+      PORT: "8000"
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    ports:
+      - "8000:8000"
+    # Reload the warehouse into Postgres and retrain on startup, then serve.
+    command: >
+      sh -c "python -m churn.etl && python -m churn.train &&
+             uvicorn churn.api:app --host 0.0.0.0 --port 8000"

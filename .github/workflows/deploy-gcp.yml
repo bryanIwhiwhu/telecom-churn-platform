@@ -1,0 +1,56 @@
+name: Deploy to Google Cloud Run
+
+# Runs only when you trigger it manually (Actions tab -> "Run workflow"),
+# so pushes never deploy or spend money by surprise.
+on:
+  workflow_dispatch:
+
+env:
+  REGION: northamerica-northeast2          # Toronto
+  REPOSITORY: churn
+  SERVICE: churn-platform
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write                        # needed for keyless Workload Identity auth
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud (no stored keys)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_SA_EMAIL }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Build and push image to Artifact Registry
+        run: |
+          IMAGE="${REGION}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${REPOSITORY}/${SERVICE}:${GITHUB_SHA::7}"
+          gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
+          docker build -t "$IMAGE" .
+          docker push "$IMAGE"
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy "$SERVICE" \
+            --image "$IMAGE" \
+            --region "$REGION" \
+            --project "${{ vars.GCP_PROJECT_ID }}" \
+            --allow-unauthenticated \
+            --memory 1Gi \
+            --min-instances 0 \
+            --max-instances 1 \
+            --quiet
+
+      - name: Smoke test the live service
+        run: |
+          URL=$(gcloud run services describe "$SERVICE" --region "$REGION" \
+                --project "${{ vars.GCP_PROJECT_ID }}" --format 'value(status.url)')
+          curl -fs "$URL/health"
+          curl -fs "$URL/model/metrics"
+          echo "Live at: $URL/docs" >> "$GITHUB_STEP_SUMMARY"
