@@ -37,6 +37,7 @@ def test_duplicate_ids_rejected():
 def test_business_queries_run(warehouse):
     results = etl.run_named_queries(config.ROOT / "sql" / "analysis.sql", warehouse)
     assert set(results) == {"churn_rate_by_contract", "revenue_at_risk_by_internet",
-                            "churn_by_tenure_band", "support_addon_effect"}
+                            "churn_by_tenure_band", "support_addon_effect",
+                            "churn_by_payment_method", "senior_vs_non_senior"}
     contract = results["churn_rate_by_contract"]
     assert contract.iloc[0]["contract_type"] == "Month-to-month"

@@ -56,3 +56,33 @@ JOIN churn_labels l ON l.customer_id = s.customer_id
 WHERE s.internet_service <> 'No'
 GROUP BY s.internet_service, s.tech_support
 ORDER BY s.internet_service, s.tech_support;
+
+
+-- @query churn_by_payment_method
+-- Which payment methods have the highest churn?
+SELECT
+    b.payment_method,
+    COUNT(*)                                    AS customers,
+    SUM(l.churned)                             AS churned,
+    ROUND(100.0 * SUM(l.churned) / COUNT(*), 1) AS churn_rate_pct
+FROM billing b
+JOIN churn_labels l ON l.customer_id = b.customer_id
+GROUP BY b.payment_method
+ORDER BY churn_rate_pct DESC;
+
+
+-- @query senior_vs_non_senior
+-- How does churn and average monthly charges differ between senior and non-senior customers?
+SELECT
+    CASE WHEN c.senior_citizen = 1 THEN 'Senior'
+        ELSE 'Non-senior' 
+    END                                                AS segment,
+    COUNT(*)                                           AS customers,
+    SUM(l.churned)                                     AS churned,
+    ROUND(100.0 * SUM(l.churned) / COUNT(*), 1)        AS churn_rate_pct,
+    ROUND(AVG(b.monthly_charges), 2)                   AS avg_monthly_charges
+FROM billing b
+JOIN churn_labels l ON l.customer_id = b.customer_id
+JOIN customers c ON c.customer_id = b.customer_id
+GROUP BY segment
+ORDER BY churn_rate_pct DESC, avg_monthly_charges DESC;
