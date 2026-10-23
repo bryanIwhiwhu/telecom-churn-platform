@@ -59,3 +59,7 @@ def test_predictions_are_logged_and_monitored(trained):
 
 def test_agent_disabled_without_key(trained):
     assert client.post("/agent/ask", json={"question": "Which plan churns most?"}).status_code == 503
+
+
+def test_invalid_monthly_charges_rejected(trained):
+    assert client.post("/predict", json={**NEW_CUSTOMER, "monthly_charges": -5}).status_code == 422
