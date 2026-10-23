@@ -1,4 +1,5 @@
 # Telecom Churn Platform
+![CI](https://github.com/bryanIwhiwhu/telecom-churn-platform/actions/workflows/ci.yml/badge.svg)
 
 End-to-end data and ML system for predicting which telecom customers will cancel, built to
 production habits: a normalized SQL warehouse, a validated ETL pipeline, a model with a
