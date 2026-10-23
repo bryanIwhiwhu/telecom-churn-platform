@@ -15,8 +15,8 @@ so normal demo traffic stays inside the free tier. Artifact Registry storage bey
 ## 1. Variables
 
 ```bash
-export PROJECT_ID="bryan-churn-demo"        # must be globally unique
-export GITHUB_REPO="YOUR_GITHUB_USERNAME/bell-churn-platform"
+export PROJECT_ID="telecom-churn-demo"        # must be globally unique
+export GITHUB_REPO="YOUR_GITHUB_USERNAME/telecom-churn-platform"
 export REGION="northamerica-northeast2"     # Toronto
 
 gcloud projects create "$PROJECT_ID"

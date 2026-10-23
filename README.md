@@ -6,6 +6,8 @@ production habits: a normalized SQL warehouse, a validated ETL pipeline, a model
 quality gate, a FastAPI service with prediction logging and drift monitoring, a guarded
 natural-language analytics agent, Docker, CI/CD, and a keyless deploy to Google Cloud Run.
 
+Live API: <(https://churn-platform-lst4y7dycq-pd.a.run.app/docs)>
+
 ## Architecture
 
 ```
@@ -31,13 +33,19 @@ natural-language analytics agent, Docker, CI/CD, and a keyless deploy to Google 
 | Lift in top-scored 10% | 2.85× |
 | Selected model | Logistic regression (beat gradient boosting in CV: 0.846 vs 0.844) |
 
-What the data says (from `sql/analysis.sql`):
+Findings:
 
 - Month-to-month customers churn at **42.7%**, versus 11.3% on one-year and 2.8% on two-year contracts.
 - Fiber customers account for most lost revenue: **40.3%** of fiber monthly revenue belongs to churned customers.
 - Churn is **54.3%** in the first 6 months and falls to 9.6% after 4 years.
 - Tech support is associated with much lower churn: 22.6% vs 49.4% for fiber customers
   (an association in historical data, not proof that adding support causes retention).
+
+## Known limitations
+ 
+- On Cloud Run the database lives inside the container, so the prediction log resets when it restarts.
+  The fix would be a managed database (Cloud SQL); the code already runs on PostgreSQL.
+- The dataset is a single snapshot with no dates, so I can't test the model on "future" customers.
 
 ![Churn by contract](reports/churn_by_contract.png)
 ![ROC curve](reports/roc_curve.png)
@@ -50,7 +58,7 @@ python -m churn.etl                          # build the warehouse
 python -m churn.etl --query sql/analysis.sql # business questions in SQL
 python -m churn.train                        # train, compare, save model + charts
 uvicorn churn.api:app --reload               # http://localhost:8000/docs
-pytest -q                                    # 23 tests
+pytest -q                                    # 24 tests
 ```
 
 PostgreSQL stack instead of SQLite: `docker compose up --build`.
@@ -61,22 +69,6 @@ Analytics agent (optional, needs an API key):
 export ANTHROPIC_API_KEY=...
 python -m churn.agent "What share of fiber revenue comes from customers who churned?"
 ```
-
-## Design decisions worth asking me about
-
-- **Label isolation.** Churn labels live in their own table and only join in a training view,
-  so serving code cannot leak the target.
-- **One feature list** (`features.py`) is shared by training and serving to prevent skew.
-- **Quality gate in CI.** Tests fail if ROC-AUC drops below 0.80 or top-decile lift below 2×.
-- **Monitoring.** Every prediction is logged; `/monitoring/drift` computes the Population
-  Stability Index against training distributions.
-- **Agent safety.** The LLM never touches the database directly. Its SQL must pass a
-  single-statement, SELECT-only check and then runs in a read-only transaction with a row cap.
-  It gets one chance to self-correct a failed query. Tests use a fake LLM, so CI needs no key.
-- **Keyless cloud auth.** GitHub authenticates to Google Cloud with Workload Identity Federation;
-  no service-account key exists to leak.
-- **Known limitation.** On Cloud Run the bundled SQLite resets on restart. The fix is Cloud SQL
-  (the code already runs on PostgreSQL, and CI proves it).
 
 ## Deploy
 
