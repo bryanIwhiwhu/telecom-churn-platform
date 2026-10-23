@@ -6,7 +6,7 @@ production habits: a normalized SQL warehouse, a validated ETL pipeline, a model
 quality gate, a FastAPI service with prediction logging and drift monitoring, a guarded
 natural-language analytics agent, Docker, CI/CD, and a keyless deploy to Google Cloud Run.
 
-Live API: <(https://churn-platform-lst4y7dycq-pd.a.run.app/docs)>
+Live API: https://churn-platform-lst4y7dycq-pd.a.run.app/docs
 
 ## Architecture
 
