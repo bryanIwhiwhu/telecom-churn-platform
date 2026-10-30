@@ -63,3 +63,8 @@ def test_readonly_execution_cannot_write(warehouse):
         agent.run_readonly(warehouse, "DELETE FROM churn_labels")
     with warehouse.connect() as conn:
         assert conn.execute(text("SELECT COUNT(*) FROM churn_labels")).scalar() > 7000
+
+def test_validate_sql_rejects_write_CTE():
+    # A CTE (WITH ...) is allowed, but a DELETE hidden inside it must not be.
+    with pytest.raises(agent.UnsafeQueryError):
+        agent.validate_sql("WITH x AS (DELETE FROM customers RETURNING *) SELECT * FROM x")

@@ -40,6 +40,9 @@ Rules:
 - Read-only SELECT (CTEs with WITH are fine). Never modify data.
 - Use only the tables and columns listed above. Churned customers have churned = 1.
 - Percentages: ROUND(100.0 * x / y, 1). Keep results small (aggregate or LIMIT).
+- For add-on columns (online_security, tech_support, etc.), exclude 'No internet service'
+  unless the question asks about it, so the comparison is Yes vs No.
+- "Revenue" means monthly_charges (recurring revenue) unless the question says lifetime or total.
 """
 
 SUMMARY_PROMPT = """Question: {question}
@@ -50,8 +53,8 @@ SQL used:
 Result rows (CSV):
 {rows}
 
-Answer the question in 2-4 sentences for a business audience. Use only numbers that
-appear in the rows. If the rows do not answer the question, say so."""
+Answer the exact comparison asked. Before stating "more" or "less", check which number is larger.
+Use only numbers that appear in the rows. If the rows do not answer the question, say so."""
 
 
 class UnsafeQueryError(ValueError):
